@@ -8,6 +8,10 @@ Claude Code on the web の環境で追加すべきドメインの一覧。glob O
 
 ```text
 *.cachix.org
+*.jdx.dev
+go.dev
+dl.google.com
+cache.ruby-lang.org
 ```
 
 ## セットアップスクリプト
