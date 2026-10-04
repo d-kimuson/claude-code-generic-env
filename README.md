@@ -10,29 +10,6 @@ Claude Code on the web の環境で追加すべきドメインの一覧。glob O
 （追加不要）
 ```
 
-Nix で使うホストはデフォルトリストに含まれているため、追加のドメインは不要。
-
-| 用途 | ホスト | デフォルトリスト |
-| --- | --- | --- |
-| バイナリキャッシュ | `cache.nixos.org` | `*.nixos.org` |
-| flake registry / nixpkgs チャンネル | `channels.nixos.org`, `releases.nixos.org` | `*.nixos.org` |
-| Nix 本体のインストーラ（フォールバック時のみ） | `releases.nixos.org` | `*.nixos.org` |
-
-デフォルトでブロックされることを確認したホスト（必要になったら追加する）:
-
-- `*.cachix.org`: Cachix のバイナリキャッシュ（`nix-community.cachix.org` など）を使う場合
-- `install.determinate.systems`: Determinate Nix Installer。セットアップスクリプトでは使っていない
-
-### GitHub 上の flake input について
-
-GitHub への通信は Allowed Domains ではなく GitHub プロキシを経由し、**セッションにアタッチされていないリポジトリへのアクセスは 403 になる**（`NixOS/nixpkgs` も対象）。そのため:
-
-- `flake.lock` でロック済みの `github:` input は、`narHash` をもとに `cache.nixos.org` から substitute されるので取得できる（nixpkgs など公式キャッシュにあるもの）
-- `nix flake update` / `nix flake lock` などで `github:` input を解決する操作（`api.github.com` を叩く）は失敗する。lock の更新はローカルで行う
-- `nix run nixpkgs#foo` のような registry 経由の `nixpkgs` は `channels.nixos.org` に解決されるので使える
-- GitHub は Allowed Domains の対象外（`github.com` 等はデフォルトリストに入っているが、それでも GitHub プロキシの制限を受ける）なので、ドメイン追加では回避できない
-- 一方 git プロトコル経由の clone は通るので、cloud 上で lock を解決したい input は `git+https://github.com/NixOS/nixpkgs?ref=nixpkgs-unstable&shallow=1` のように書けば取得できる
-
 ## セットアップスクリプト
 
 Claude Code on the web の環境に設定すべきセットアップ処理
@@ -59,10 +36,10 @@ for envrc in /home/user/*/.envrc; do
 done
 ```
 
-やっていること:
+## 注意事項
 
-1. direnv を `nix profile add nixpkgs#direnv` でインストール（registry の `nixpkgs` は `channels.nixos.org` に解決されるので GitHub 制限の影響を受けない）
-2. `/home/user` 配下の `.envrc` を `direnv allow` 無しで信頼するよう whitelist を設定
-3. `/home/user/*/.envrc` の devShell を事前にビルドし、環境キャッシュ（ファイルシステムのスナップショット）に `/nix/store` を含める
-
-セッション開始後は `.claude/hooks/load-direnv.sh`（SessionStart / CwdChanged hook）が `direnv export bash` の結果を `CLAUDE_ENV_FILE` に書き出し、Bash ツールに devShell の環境が反映される。
+- GitHub は Allowed Domains ではなく GitHub プロキシの制限を受け、セッションにアタッチしていないリポジトリ（`NixOS/nixpkgs` 含む）は API アクセスが 403 になる
+  - `flake.lock` でロック済みの `github:` input は `cache.nixos.org` から取得できる
+  - `nix flake update` などの `github:` input の解決は失敗する。lock の更新はローカルで行う
+  - cloud 上で解決したい input は `git+https://github.com/NixOS/nixpkgs?ref=nixpkgs-unstable&shallow=1` のように書けば取得できる
+- `*.cachix.org` はデフォルトでブロックされる。Cachix のキャッシュを使う場合は Allowed Domains に追加する
