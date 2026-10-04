@@ -7,7 +7,7 @@ Claude Code on the web 環境で nix をベースに環境を起動するため�
 Claude Code on the web の環境で追加すべきドメインの一覧。glob OK, 中間 glob NG (Ex. `nixos.*.org`)。[デフォルトリスト](https://code.claude.com/docs/en/cloud-environments#default-allowed-domains) は含む設定になっている前提。
 
 ```text
-（追加不要）
+*.cachix.org
 ```
 
 ## セットアップスクリプト
@@ -42,4 +42,3 @@ done
   - `flake.lock` でロック済みの `github:` input は `cache.nixos.org` から取得できる
   - `nix flake update` などの `github:` input の解決は失敗する。lock の更新はローカルで行う
   - cloud 上で解決したい input は `git+https://github.com/NixOS/nixpkgs?ref=nixpkgs-unstable&shallow=1` のように書けば取得できる
-- `*.cachix.org` はデフォルトでブロックされる。Cachix のキャッシュを使う場合は Allowed Domains に追加する
