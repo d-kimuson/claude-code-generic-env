@@ -17,11 +17,8 @@ cache.ruby-lang.org
 
 | ドメイン | 用途 |
 | --- | --- |
-| `*.cachix.org` | Nix: Cachix のバイナリキャッシュ |
 | `*.jdx.dev` | mise: バージョン一覧・Java のメタデータ取得 |
-| `go.dev`, `dl.google.com` | mise: Go のダウンロード |
-| `download.java.net` | mise: OpenJDK のダウンロード（`.java-version` が `21` のようにベンダー指定なしの場合） |
-| `cache.ruby-lang.org` | mise: Ruby のバージョン一覧 |
+| `dl.google.com` | mise: Go のダウンロード（`go.dev` からのリダイレクト先） |
 
 ## セットアップスクリプト
 
