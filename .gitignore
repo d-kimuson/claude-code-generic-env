@@ -1,0 +1,9 @@
+# direnv
+.direnv/
+
+# dotenv
+.env
+
+# nix
+result
+result-*
