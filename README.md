@@ -11,8 +11,17 @@ Claude Code on the web の環境で追加すべきドメインの一覧。glob O
 *.jdx.dev
 go.dev
 dl.google.com
+download.java.net
 cache.ruby-lang.org
 ```
+
+| ドメイン | 用途 |
+| --- | --- |
+| `*.cachix.org` | Nix: Cachix のバイナリキャッシュ |
+| `*.jdx.dev` | mise: バージョン一覧・Java のメタデータ取得 |
+| `go.dev`, `dl.google.com` | mise: Go のダウンロード |
+| `download.java.net` | mise: OpenJDK のダウンロード（`.java-version` が `21` のようにベンダー指定なしの場合） |
+| `cache.ruby-lang.org` | mise: Ruby のバージョン一覧 |
 
 ## セットアップスクリプト
 
@@ -38,6 +47,36 @@ shopt -s nullglob
 for envrc in /home/user/*/.envrc; do
   direnv exec "$(dirname "$envrc")" true
 done
+
+# バージョンファイルがあるリポジトリだけ mise でランタイムを入れる
+declare -A idiomatic_tools=(
+  [.node-version]=node [.nvmrc]=node [.python-version]=python
+  [.ruby-version]=ruby [.go-version]=go [.java-version]=java
+)
+mise_dirs=()
+for dir in /home/user/*/; do
+  found=false
+  for f in mise.toml .mise.toml .tool-versions "${!idiomatic_tools[@]}"; do
+    [[ -e "$dir$f" ]] && found=true
+  done
+  $found && mise_dirs+=("$dir")
+done
+
+if ((${#mise_dirs[@]} > 0)); then
+  nix profile add nixpkgs#mise
+  mise settings add trusted_config_paths /home/user
+  # GitHub API が 403 になり attestation 検証に失敗するため無効化
+  mise settings set github_attestations false
+  for dir in "${mise_dirs[@]}"; do
+    for f in "${!idiomatic_tools[@]}"; do
+      [[ -e "$dir$f" ]] && mise settings add idiomatic_version_file_enable_tools "${idiomatic_tools[$f]}"
+    done
+  done
+  echo 'eval "$(mise activate bash --shims)"' >>~/.bashrc
+  for dir in "${mise_dirs[@]}"; do
+    (cd "$dir" && mise install --yes)
+  done
+fi
 ```
 
 ## 注意事項
