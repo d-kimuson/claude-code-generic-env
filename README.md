@@ -1,6 +1,6 @@
-# nix-cc-on-the-web
+# claude-code-generic-env
 
-Claude Code on the web 環境で nix をベースに環境を起動するための設定例
+Claude Code on the web で使う汎用環境の設定。Nix + direnv で各リポジトリの devShell を読み込み、必要に応じて mise（`mise.toml` や `.node-version` などのバージョンファイル）でランタイムを入れた状態でセッションを開始する。
 
 ## Allowed Domains
 
@@ -29,23 +29,23 @@ Claude Code on the web の環境に設定すべきセットアップ処理
 
 set -euo pipefail
 
-# Nix はデフォルトイメージに導入済み (flakes 有効)
+# Nix is preinstalled in the default image (flakes enabled)
 nix profile add nixpkgs#direnv
 
-# /home/user 配下の .envrc を `direnv allow` 無しで信頼する
+# Trust .envrc under /home/user without `direnv allow`
 mkdir -p ~/.config/direnv
 cat >~/.config/direnv/direnv.toml <<'EOF'
 [whitelist]
 prefix = ["/home/user"]
 EOF
 
-# devShell を事前ビルドして環境キャッシュに含める
+# Prebuild devShells so they are included in the environment cache
 shopt -s nullglob
 for envrc in /home/user/*/.envrc; do
   direnv exec "$(dirname "$envrc")" true
 done
 
-# バージョンファイルがあるリポジトリだけ mise でランタイムを入れる
+# Install runtimes with mise only for repositories that have version files
 declare -A idiomatic_tools=(
   [.node-version]=node [.nvmrc]=node [.python-version]=python
   [.ruby-version]=ruby [.go-version]=go [.java-version]=java
@@ -62,7 +62,7 @@ done
 if ((${#mise_dirs[@]} > 0)); then
   nix profile add nixpkgs#mise
   mise settings add trusted_config_paths /home/user
-  # GitHub API が 403 になり attestation 検証に失敗するため無効化
+  # Disabled because the GitHub API returns 403 and attestation verification fails
   mise settings set github_attestations false
   for dir in "${mise_dirs[@]}"; do
     for f in "${!idiomatic_tools[@]}"; do
