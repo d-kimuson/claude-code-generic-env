@@ -39,6 +39,19 @@ cat >~/.config/direnv/direnv.toml <<'EOF'
 prefix = ["/home/user"]
 EOF
 
+# Distribute skills / prompts / CLAUDE.md from dotfiles with chezmoi.
+# Apply only the agent-related targets: a full apply would overwrite ~/.gitconfig etc.
+# and break the git setup (commit signing, proxy) of the cloud environment.
+nix profile add nixpkgs#chezmoi
+chezmoi init https://github.com/d-kimuson/dotfiles.git
+chezmoi apply ~/.agents ~/.claude/CLAUDE.md ~/.claude/commands
+# ~/.claude/skills is managed by Claude Code on the web, so link each skill
+# instead of replacing the directory with dotfiles' symlink
+mkdir -p ~/.claude/skills
+for skill in ~/.agents/skills/*/; do
+  ln -sfn "${skill%/}" ~/.claude/skills/
+done
+
 # Prebuild devShells so they are included in the environment cache
 shopt -s nullglob
 for envrc in /home/user/*/.envrc; do
@@ -77,6 +90,8 @@ fi
 ```
 
 ## 注意事項
+
+- dotfiles は環境キャッシュ作成時点の内容で配布される。dotfiles の更新を反映するにはセッション内で `chezmoi update ~/.agents ~/.claude/CLAUDE.md ~/.claude/commands` を実行するか、環境キャッシュを作り直す
 
 - GitHub は Allowed Domains ではなく GitHub プロキシの制限を受け、セッションにアタッチしていないリポジトリ（`NixOS/nixpkgs` 含む）は API アクセスが 403 になる
   - `flake.lock` でロック済みの `github:` input は `cache.nixos.org` から取得できる
