@@ -39,18 +39,26 @@ cat >~/.config/direnv/direnv.toml <<'EOF'
 prefix = ["/home/user"]
 EOF
 
-# Distribute skills / prompts / CLAUDE.md from dotfiles with chezmoi.
-# Apply only the agent-related targets: a full apply would overwrite ~/.gitconfig etc.
-# and break the git setup (commit signing, proxy) of the cloud environment.
+# Distribute the agents harness (AGENTS.md / agent-core / playbooks / skills / prompts) from dotfiles.
+# agent-core runs .ts files with Node.js directly, so the harness needs Node.js 26.
+nix profile add nixpkgs#nodejs_26
 nix profile add nixpkgs#chezmoi
 chezmoi init https://github.com/d-kimuson/dotfiles.git
-chezmoi apply ~/.agents ~/.claude/CLAUDE.md ~/.claude/commands
+# The environment is disposable, so copy ~/.agents instead of symlinking it.
+# The claude-code-web profile leaves out what only works with other agent CLIs.
+dotfiles=~/.local/share/chezmoi
+"$dotfiles/agents-harness/.agents/scripts/agent-core.ts" --root "$dotfiles/agents-harness" export --to ~ --profile claude-code-web
 # ~/.claude/skills is managed by Claude Code on the web, so link each skill
 # instead of replacing the directory with dotfiles' symlink
 mkdir -p ~/.claude/skills
+# Apply only the agent-related targets: a full apply would overwrite ~/.gitconfig etc.
+# and break the git setup (commit signing, proxy) of the cloud environment.
+chezmoi apply ~/.claude/CLAUDE.md ~/.claude/commands
 for skill in ~/.agents/skills/*/; do
   ln -sfn "${skill%/}" ~/.claude/skills/
 done
+# Fail the setup early if the copied harness is incomplete or Node.js cannot run it.
+~/.agents/scripts/agent-core.ts verify
 
 # Prebuild devShells so they are included in the environment cache
 shopt -s nullglob
@@ -91,7 +99,14 @@ fi
 
 ## 注意事項
 
-- dotfiles は環境キャッシュ作成時点の内容で配布される。dotfiles の更新を反映するにはセッション内で `chezmoi update ~/.agents ~/.claude/CLAUDE.md ~/.claude/commands` を実行するか、環境キャッシュを作り直す
+- dotfiles は環境キャッシュ作成時点の内容で配布される。dotfiles の更新を反映するには、セッション内で次を実行するか、環境キャッシュを作り直す。`export` は既存の `~/.agents` を上書きしないので先に削除する
+
+  ```bash
+  chezmoi update --apply=false && rm -rf ~/.agents && ~/.local/share/chezmoi/agents-harness/.agents/scripts/agent-core.ts --root ~/.local/share/chezmoi/agents-harness export --to ~ --profile claude-code-web && ~/.agents/scripts/agent-core.ts verify
+  ```
+
+- skills を追加・更新した場合は、`~/.claude/skills` の symlink を作り直すか (`~/.agents` の更新後に for ループを再実行する)、環境キャッシュを作り直す
+- `nix profile add nixpkgs#nodejs_26` は、イメージ既定の Node.js より前の PATH に置かれる前提である。`node --version` が 26 系でないと agent-core は動かない
 
 - GitHub は Allowed Domains ではなく GitHub プロキシの制限を受け、セッションにアタッチしていないリポジトリ（`NixOS/nixpkgs` 含む）は API アクセスが 403 になる
   - `flake.lock` でロック済みの `github:` input は `cache.nixos.org` から取得できる
