@@ -44,8 +44,8 @@ EOF
 nix profile add nixpkgs#nodejs_26
 nix profile add nixpkgs#chezmoi
 chezmoi init https://github.com/d-kimuson/dotfiles.git
-# The environment is disposable, so copy ~/.agents instead of symlinking it.
-# The claude-code-web profile leaves out what only works with other agent CLIs.
+# Copy ~/.agents instead of symlinking it: the claude-code-web profile leaves out
+# what only works with other agent CLIs.
 dotfiles=~/.local/share/chezmoi
 "$dotfiles/agents-harness/.agents/scripts/agent-core.ts" --root "$dotfiles/agents-harness" export --to ~ --profile claude-code-web
 # ~/.claude/skills is managed by Claude Code on the web, so link each skill
