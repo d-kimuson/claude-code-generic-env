@@ -40,7 +40,7 @@ prefix = ["/home/user"]
 EOF
 
 # Distribute the agents harness (AGENTS.md / agent-core / playbooks / skills / prompts) from dotfiles.
-# agent-core runs .ts files with Node.js directly, so the harness needs Node.js 26.
+# agent-core runs .ts files with Node.js directly, so it needs a Node.js that strips types by default (22.18+).
 nix profile add nixpkgs#nodejs_26
 nix profile add nixpkgs#chezmoi
 chezmoi init https://github.com/d-kimuson/dotfiles.git
@@ -102,11 +102,11 @@ fi
 - dotfiles は環境キャッシュ作成時点の内容で配布される。dotfiles の更新を反映するには、セッション内で次を実行するか、環境キャッシュを作り直す。`export` は既存の `~/.agents` を上書きしないので先に削除する
 
   ```bash
-  chezmoi update --apply=false && rm -rf ~/.agents && ~/.local/share/chezmoi/agents-harness/.agents/scripts/agent-core.ts --root ~/.local/share/chezmoi/agents-harness export --to ~ --profile claude-code-web && ~/.agents/scripts/agent-core.ts verify
+  chezmoi update --apply=false && chezmoi apply ~/.claude/CLAUDE.md ~/.claude/commands && rm -rf ~/.agents && ~/.local/share/chezmoi/agents-harness/.agents/scripts/agent-core.ts --root ~/.local/share/chezmoi/agents-harness export --to ~ --profile claude-code-web && ~/.agents/scripts/agent-core.ts verify
   ```
 
-- skills を追加・更新した場合は、`~/.claude/skills` の symlink を作り直すか (`~/.agents` の更新後に for ループを再実行する)、環境キャッシュを作り直す
-- `nix profile add nixpkgs#nodejs_26` は、イメージ既定の Node.js より前の PATH に置かれる前提である。`node --version` が 26 系でないと agent-core は動かない
+- skills を追加・削除した場合は、`~/.claude/skills` の symlink を作り直すか (`~/.agents` の更新後に for ループを再実行する)、環境キャッシュを作り直す。削除した skill のリンクを消すには `find ~/.claude/skills -maxdepth 1 -xtype l -delete` を実行する
+- `nix profile add nixpkgs#nodejs_26` は、イメージ既定の Node.js より前の PATH に置かれる前提である。agent-core が動くのは、型の除去が既定で有効な Node.js (22.18 以降の 22 系、または 23.6 以降) だけなので、`node --version` が 22.18 未満だと失敗する
 
 - GitHub は Allowed Domains ではなく GitHub プロキシの制限を受け、セッションにアタッチしていないリポジトリ（`NixOS/nixpkgs` 含む）は API アクセスが 403 になる
   - `flake.lock` でロック済みの `github:` input は `cache.nixos.org` から取得できる
