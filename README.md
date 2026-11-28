@@ -43,6 +43,11 @@ EOF
 # agent-core runs .ts files with Node.js directly, so it needs a Node.js that strips types by default (22.18+).
 nix profile add nixpkgs#nodejs_26
 nix profile add nixpkgs#chezmoi
+
+# =====================================================
+# ============ Configure User Scope Harnes ============
+# =====================================================
+
 chezmoi init https://github.com/d-kimuson/dotfiles.git
 # Copy ~/.agents instead of symlinking it: the claude-code-web profile leaves out
 # what only works with other agent CLIs.
@@ -59,6 +64,10 @@ for skill in ~/.agents/skills/*/; do
 done
 # Fail the setup early if the copied harness is incomplete or Node.js cannot run it.
 ~/.agents/scripts/agent-core.ts verify
+
+# =====================================================
+# ========== End Configure User Scope Harnes ==========
+# =====================================================
 
 # Prebuild devShells so they are included in the environment cache
 shopt -s nullglob
