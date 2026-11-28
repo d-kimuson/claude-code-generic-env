@@ -94,10 +94,15 @@ if ((${#mise_dirs[@]} > 0)); then
   mise settings add trusted_config_paths /home/user
   # Disabled because the GitHub API returns 403 and attestation verification fails
   mise settings set github_attestations false
+  # Collect the tools first: `mise settings add` appends the same value again on every call
+  declare -A enabled_tools=()
   for dir in "${mise_dirs[@]}"; do
     for f in "${!idiomatic_tools[@]}"; do
-      [[ -e "$dir$f" ]] && mise settings add idiomatic_version_file_enable_tools "${idiomatic_tools[$f]}"
+      [[ -e "$dir$f" ]] && enabled_tools[${idiomatic_tools[$f]}]=1
     done
+  done
+  for tool in "${!enabled_tools[@]}"; do
+    mise settings add idiomatic_version_file_enable_tools "$tool"
   done
   echo 'eval "$(mise activate bash --shims)"' >>~/.bashrc
   for dir in "${mise_dirs[@]}"; do
